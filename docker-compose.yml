@@ -1,0 +1,35 @@
+services:
+  api:
+    build: .
+    container_name: forro-ruby-api
+    ports:
+      - "8012:8012"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ruby:ruby_secret@db:5432/forro_ruby
+      JWT_SECRET: ${JWT_SECRET:-troque-esta-chave-em-producao}
+      SEED_DEFAULT_PASSWORD: ${SEED_DEFAULT_PASSWORD:-forroruby2026}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: forro-ruby-db
+    environment:
+      POSTGRES_USER: ruby
+      POSTGRES_PASSWORD: ruby_secret
+      POSTGRES_DB: forro_ruby
+    volumes:
+      - forro_ruby_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruby -d forro_ruby"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  forro_ruby_data:
